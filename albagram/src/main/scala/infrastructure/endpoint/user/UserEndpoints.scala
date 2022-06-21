@@ -3,10 +3,6 @@ package infrastructure.endpoint.user
 import cats.data.EitherT
 import cats.effect.Sync
 import cats.syntax.all._
-import domain.authentication._
-import domain.authentification.Authentification
-import domain.error._
-import domain.users._
 import infrastructure.endpoint.{AuthEndpoint, AuthService, Pagination}
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -17,6 +13,11 @@ import tsec.authentication._
 import tsec.common.Verified
 import tsec.jwt.algorithms.JWTMacAlgo
 import tsec.passwordhashers.{PasswordHash, PasswordHasher}
+
+import domain.authentication._
+import domain.authentification.Authentification
+import domain.error._
+import domain.users._
 
 class UserEndpoints[F[_]: Sync, A, Auth: JWTMacAlgo] extends Http4sDsl[F] {
   import Pagination._
@@ -48,7 +49,7 @@ class UserEndpoints[F[_]: Sync, A, Auth: JWTMacAlgo] extends Http4sDsl[F] {
           case None => throw new Exception("Impossible") // User is not properly modeled
           case Some(id) => EitherT.right[UserAuthenticationFailedError](auth.create(id))
         }
-      } yield (user, token)
+      } yield (UserResponse(user), token)
 
       action.value.flatMap {
         case Right((user, token)) => Ok(user.asJson).map(auth.embed(_, token))
@@ -85,7 +86,7 @@ class UserEndpoints[F[_]: Sync, A, Auth: JWTMacAlgo] extends Http4sDsl[F] {
       } yield result
 
       action.flatMap {
-        case Right(saved) => Ok(saved.asJson)
+        case Right(saved) => Ok(UserResponse(saved).asJson)
         case Left(UserNotFoundError) => NotFound("User not found")
       }
   }
@@ -103,7 +104,7 @@ class UserEndpoints[F[_]: Sync, A, Auth: JWTMacAlgo] extends Http4sDsl[F] {
   private def searchByNameEndpoint(userService: UserService[F]): AuthEndpoint[F, Auth] = {
     case GET -> Root / userName asAuthed _ =>
       userService.getUserByName(userName).value.flatMap {
-        case Right(found) => Ok(found.asJson)
+        case Right(found) => Ok(UserResponse(found).asJson)
         case Left(UserNotFoundError) => NotFound("The user was not found")
       }
   }

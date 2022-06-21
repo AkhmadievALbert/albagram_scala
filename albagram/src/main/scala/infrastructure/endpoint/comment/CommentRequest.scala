@@ -1,5 +1,6 @@
 package infrastructure.endpoint.comment
 
-class CommentRequest {
-
-}
+case class CommentRequest(
+                           title: String,
+                           postId: Long
+                         )

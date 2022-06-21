@@ -14,3 +14,4 @@ case class ThemeAlreadyExistsError(theme: Theme) extends ValidationError
 
 case class PostAlreadyExistsError(post: Post) extends ValidationError
 case object PostNotFoundError extends  ValidationError
+

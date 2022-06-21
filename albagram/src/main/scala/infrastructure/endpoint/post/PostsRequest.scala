@@ -5,10 +5,9 @@ import domain.posts.Post
 final case class CreatePostRequest(
                                title: String,
                                description: Option[String] = None,
-                               themeId: Long,
-                               userId: Long
+                               themeId: Long
                              ) {
-  def asPost(): Post = Post(
+  def asPost(userId: Long): Post = Post(
     title = title,
     description = description,
     themeId = themeId,

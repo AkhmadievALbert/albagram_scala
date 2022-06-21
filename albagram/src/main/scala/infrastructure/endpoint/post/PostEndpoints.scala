@@ -2,11 +2,9 @@ package infrastructure.endpoint.post
 
 import cats.effect.Sync
 import cats.syntax.all._
-import domain.authentication.LoginRequest
 import domain.authentification.Authentification
-import domain.error.{PostAlreadyExistsError, ThemeAlreadyExistsError}
+import domain.error.PostAlreadyExistsError
 import domain.posts.PostService
-import domain.themes._
 import domain.users.User
 import infrastructure.endpoint.{AuthEndpoint, AuthService, Pagination, QueryParam}
 import io.circe.generic.auto._
@@ -25,14 +23,19 @@ class PostEndpoints[F[_] : Sync, Auth: JWTMacAlgo] extends Http4sDsl[F] {
   implicit val createPostReqDecoder: EntityDecoder[F, CreatePostRequest] = jsonOf
 
   private def createPostEndpoint(postService: PostService[F]): AuthEndpoint[F, Auth] = {
-    case req@POST -> Root asAuthed _ =>
-      val action = for {
-        post <- req.request.as[CreatePostRequest].map(_.asPost())
-        result <- postService.createPost(post).value
-      } yield result
-      action.flatMap {
-        case Right(saved) => Ok(saved.asJson)
-        case Left(PostAlreadyExistsError(post)) => NotFound(s"The post with title ${post.title} already exists")
+    case req@POST -> Root asAuthed user =>
+      user.id match {
+        case Some(id) =>
+          val action = for {
+            post <- req.request.as[CreatePostRequest].map(_.asPost(id))
+            result <- postService.createPost(post).value
+          } yield result
+          action.flatMap {
+            case Right(saved) => Ok(saved.asJson)
+            case Left(PostAlreadyExistsError(post)) => NotFound(s"The post with title ${post.title} already exists")
+          }
+        case None =>
+          NotFound("userId must exist")
       }
   }
 
@@ -80,10 +83,10 @@ class PostEndpoints[F[_] : Sync, Auth: JWTMacAlgo] extends Http4sDsl[F] {
 }
 
 object PostEndpoints {
-  def endpoints[F[_]: Sync, Auth: JWTMacAlgo](
-                                               postService: PostService[F],
-                                               auth: SecuredRequestHandler[F, Long, User, AugmentedJWT[Auth, Long]],
-                                             ): HttpRoutes[F] =
+  def endpoints[F[_] : Sync, Auth: JWTMacAlgo](
+                                                postService: PostService[F],
+                                                auth: SecuredRequestHandler[F, Long, User, AugmentedJWT[Auth, Long]],
+                                              ): HttpRoutes[F] =
     new PostEndpoints[F, Auth].endpoints(postService, auth)
 }
 

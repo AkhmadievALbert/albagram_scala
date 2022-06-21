@@ -1,4 +1,4 @@
-package infrastructure.repository.post
+package infrastructure.repository
 
 import cats.data.OptionT
 import cats.effect.Bracket

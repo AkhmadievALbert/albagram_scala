@@ -1,4 +1,4 @@
-organization := "scala"
+organization := "kfu-scala"
 name := "albagram"
 version := "0.0.1-SNAPSHOT"
 crossScalaVersions := Seq("2.12.15", "2.13.6")
@@ -57,6 +57,7 @@ libraryDependencies ++= Seq(
 )
 
 dependencyOverrides += "org.slf4j" % "slf4j-api" % Slf4jVersion
+scalacOptions += "-Ypartial-unification"
 
 addCompilerPlugin(
   ("org.typelevel" %% "kind-projector" % KindProjectorVersion).cross(CrossVersion.full),
